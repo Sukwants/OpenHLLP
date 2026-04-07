@@ -1,0 +1,43 @@
+name: Check Commit Email
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  email-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit author/committer emails
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Checking commits in range: $BASE_SHA..$HEAD_SHA"
+
+          # format: commit|author_email|committer_email
+          BAD_LINES=$(
+            git log --format='%H|%ae|%ce' "$BASE_SHA..$HEAD_SHA" | \
+            awk -F'|' '
+              $2 !~ /@tongji\.edu\.cn$/ {
+                print
+              }
+            '
+          )
+
+          if [ -n "$BAD_LINES" ]; then
+            echo "Found commits with invalid email domain (must end with @tongji.edu.cn):"
+            echo "$BAD_LINES"
+            exit 1
+          fi
+
+          echo "All commit emails are valid."
