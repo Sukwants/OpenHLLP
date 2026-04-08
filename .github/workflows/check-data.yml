@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install g++
         run: sudo apt-get update && sudo apt-get install -y g++
@@ -22,18 +24,44 @@ jobs:
           set -e
           EXEC_TIMEOUT="2s"
 
-          for dir in $(find problems -type d); do
+          BASE_REF="${{ github.base_ref }}"
+          git fetch --no-tags --prune --depth=1 origin "$BASE_REF"
+
+          mapfile -t CHANGED_FILES < <(git diff --name-only "origin/$BASE_REF...HEAD" -- 'problems/**')
+
+          declare -A SEEN_DIRS
+          TARGET_DIRS=()
+          for file in "${CHANGED_FILES[@]}"; do
+            dir=$(dirname "$file")
+            while [ "$dir" != "." ] && [ "$dir" != "problems" ]; do
+              if [ -f "$dir/validator.cpp" ]; then
+                if [ -z "${SEEN_DIRS[$dir]+x}" ]; then
+                  SEEN_DIRS[$dir]=1
+                  TARGET_DIRS+=("$dir")
+                fi
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+
+          if [ ${#TARGET_DIRS[@]} -eq 0 ]; then
+            echo "No changed problem directories to check."
+            exit 0
+          fi
+
+          for dir in "${TARGET_DIRS[@]}"; do
             if [ -f "$dir/validator.cpp" ]; then
               echo "Checking $dir"
 
-              g++ -std=c++17 -Iinclude "$dir/validator.cpp" -o validator
+              g++ -std=c++20 -Iinclude "$dir/validator.cpp" -o validator
 
               if [ -f "$dir/checker.cpp" ]; then
-                g++ -std=c++17 -Iinclude "$dir/checker.cpp" -o checker
+                g++ -std=c++20 -Iinclude "$dir/checker.cpp" -o checker
               fi
 
               if [ -f "$dir/std.cpp" ]; then
-                g++ -std=c++17 -Iinclude "$dir/std.cpp" -o std
+                g++ -std=c++20 -Iinclude "$dir/std.cpp" -o std
               else
                 echo "Missing std.cpp in $dir"
                 exit 1
