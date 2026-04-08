@@ -28,7 +28,7 @@ jobs:
           BAD_LINES=$(
             git log --format='%H|%ae|%ce' "$BASE_SHA..$HEAD_SHA" | \
             awk -F'|' '
-              $2 !~ /@tongji\.edu\.cn$/ {
+              $2 !~ /@tongji\.edu\.cn$/ || $3 !~ /@tongji\.edu\.cn$/ {
                 print
               }
             '
