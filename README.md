@@ -8,6 +8,7 @@
 OpenHLLP/
 ├── include/
 │   ├── testlib.h
+│   └── LICENSE
 ├── problems/
 │   ├── 3/
 │   │   ├── 3-b1/
@@ -15,7 +16,8 @@ OpenHLLP/
 │   │   │   ├── 1.ans
 │   │   │   │   ...
 │   │   │   ├── checker.cpp (optional)
-│   │   │   ├── generator.cpp
+│   │   │   ├── generator.cpp (optional)
+│   │   │   ├── README.md (optional)
 │   │   │   ├── std.cpp
 │   │   │   └── validator.cpp
 │   │   └── 3-b2/
@@ -35,9 +37,10 @@ OpenHLLP/
 
 更多地，
 
+  - `README.md` 文件中可以留下一些说明。
+  - `std.cpp` 文件为参考答案程序，不要求满足作业限制。
   - `checker.cpp` 文件为答案检查器，使用 `testlib.h`，在需要特殊答案检查器时可用。
   - `generator.cpp` 文件为数据生成器，使用 `testlib.h`，一般生成随机数据，而不提供边角情况。
-  - `std.cpp` 文件为参考答案程序，不要求满足作业限制。
   - `validator.cpp` 文件为数据校验器，使用 `testlib.h`。
 
 ## 如何贡献
@@ -56,7 +59,7 @@ std 代码无需满足作业限制，相反地，我们鼓励正常地书写 std
 
 ### 仓库更新
 
-Pull Request 标题需以 `Chore: ` 开头，挂 `chore` 标签。
+Pull Request 需挂 `chore` 标签。
 
 ### 成为合作者
 
