@@ -30,7 +30,12 @@ jobs:
           mapfile -t CHANGED_FILES < <(git diff --name-only "origin/$BASE_REF...HEAD" -- 'problems/**')
 
           declare -A SEEN_DIRS
+          declare -A DIR_RUN_ALL_INS
+          declare -A DIR_RUN_ALL_ANS
+          declare -A DIR_CHANGED_INS_STEMS
+          declare -A DIR_CHANGED_ANS_STEMS
           TARGET_DIRS=()
+
           for file in "${CHANGED_FILES[@]}"; do
             dir=$(dirname "$file")
             while [ "$dir" != "." ] && [ "$dir" != "problems" ]; do
@@ -39,6 +44,24 @@ jobs:
                   SEEN_DIRS[$dir]=1
                   TARGET_DIRS+=("$dir")
                 fi
+
+                case "$file" in
+                  "$dir/validator.cpp")
+                    DIR_RUN_ALL_INS[$dir]=1
+                    ;;
+                  "$dir/std.cpp")
+                    DIR_RUN_ALL_ANS[$dir]=1
+                    ;;
+                  *.in)
+                    stem="${file%.in}"
+                    DIR_CHANGED_INS_STEMS["$stem"]=1
+                    ;;
+                  *.ans)
+                    stem="${file%.ans}"
+                    DIR_CHANGED_ANS_STEMS["$stem"]=1
+                    ;;
+                esac
+
                 break
               fi
               dir=$(dirname "$dir")
@@ -67,30 +90,89 @@ jobs:
                 exit 1
               fi
 
-              for infile in "$dir"/*.in; do
-                [ -e "$infile" ] || continue
+              declare -A SELECTED_STEMS
+              declare -A STEM_RUN_VALIDATOR
+              declare -A STEM_RUN_STD
 
-                base=$(basename "$infile" .in)
-                ansfile="$dir/$base.ans"
+              if [ -n "${DIR_RUN_ALL_INS[$dir]+x}" ]; then
+                while IFS= read -r infile; do
+                  [ -n "$infile" ] || continue
+                  stem="${infile%.in}"
+                  SELECTED_STEMS["$stem"]=1
+                  STEM_RUN_VALIDATOR["$stem"]=1
+                done < <(find "$dir" -type f -name '*.in' | sort)
+              fi
 
-                if [ ! -f "$ansfile" ]; then
-                  echo "Missing $ansfile"
-                  exit 1
-                fi
+              if [ -n "${DIR_RUN_ALL_ANS[$dir]+x}" ]; then
+                while IFS= read -r ansfile; do
+                  [ -n "$ansfile" ] || continue
+                  stem="${ansfile%.ans}"
+                  SELECTED_STEMS["$stem"]=1
+                  STEM_RUN_STD["$stem"]=1
+                done < <(find "$dir" -type f -name '*.ans' | sort)
+              fi
 
+              for stem in "${!DIR_CHANGED_INS_STEMS[@]}"; do
+                case "$stem" in
+                  "$dir"/*)
+                    SELECTED_STEMS["$stem"]=1
+                    STEM_RUN_VALIDATOR["$stem"]=1
+                    STEM_RUN_STD["$stem"]=1
+                    ;;
+                esac
+              done
+
+              for stem in "${!DIR_CHANGED_ANS_STEMS[@]}"; do
+                case "$stem" in
+                  "$dir"/*)
+                    SELECTED_STEMS["$stem"]=1
+                    STEM_RUN_STD["$stem"]=1
+                    ;;
+                esac
+              done
+
+              if [ ${#SELECTED_STEMS[@]} -eq 0 ]; then
+                echo "  No testcase files to check."
+                continue
+              fi
+
+              mapfile -t SORTED_STEMS < <(printf '%s\n' "${!SELECTED_STEMS[@]}" | sort)
+
+              for stem in "${SORTED_STEMS[@]}"; do
+                infile="$stem.in"
+                ansfile="$stem.ans"
+
+                base=${stem#$dir/}
                 echo "  Test $base"
 
-                # validator
-                timeout "$EXEC_TIMEOUT" ./validator < "$infile"
+                if [ -n "${STEM_RUN_VALIDATOR[$stem]+x}" ]; then
+                  if [ ! -f "$infile" ]; then
+                    echo "Missing $infile"
+                    exit 1
+                  fi
 
-                # generate output
-                timeout "$EXEC_TIMEOUT" ./std < "$infile" > out.txt
+                  timeout "$EXEC_TIMEOUT" ./validator < "$infile"
 
-                # checker or diff
-                if [ -f "$dir/checker.cpp" ]; then
-                  timeout "$EXEC_TIMEOUT" ./checker "$infile" out.txt "$ansfile"
-                else
-                  diff -q out.txt "$ansfile"
+                fi
+
+                if [ -n "${STEM_RUN_STD[$stem]+x}" ]; then
+                  if [ ! -f "$infile" ]; then
+                    echo "Missing $infile"
+                    exit 1
+                  fi
+
+                  if [ ! -f "$ansfile" ]; then
+                    echo "Missing $ansfile"
+                    exit 1
+                  fi
+
+                  timeout "$EXEC_TIMEOUT" ./std < "$infile" > out.txt
+
+                  if [ -f "$dir/checker.cpp" ]; then
+                    timeout "$EXEC_TIMEOUT" ./checker "$infile" out.txt "$ansfile"
+                  else
+                    diff -q out.txt "$ansfile"
+                  fi
                 fi
               done
             fi
