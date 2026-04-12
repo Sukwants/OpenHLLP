@@ -8,13 +8,11 @@ int main(int argc, char* argv[])
     registerTestlibCmd(argc, argv);
 
 label:
-    printf("Checking the first line...\n");
     std::string a = ans.readLine();
     std::string b = ouf.readLine();
     ensure(a == b);
     if (!a.starts_with("µü´úÖÕÖµ n="))
         goto label;
-    printf("Checking which line...\n");
 
 lebal:
     char c = ans.readChar();
