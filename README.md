@@ -12,6 +12,7 @@ OpenHLLP/
 ├── problems/
 │   ├── 3/
 │   │   ├── 3-b1/
+│   │   │   ├── _config.yaml
 │   │   │   ├── 1.in
 │   │   │   ├── 1.ans
 │   │   │   │   ...
@@ -42,6 +43,14 @@ OpenHLLP/
   - `checker.cpp` 文件为答案检查器，使用 `testlib.h`，在需要特殊答案检查器时可用。
   - `generator.cpp` 文件为数据生成器，使用 `testlib.h`，一般生成随机数据，而不提供边角情况。
   - `validator.cpp` 文件为数据校验器，使用 `testlib.h`。
+
+### _config.yaml
+
+```yaml
+version: 1
+diff:
+  params: [...]  # diff 命令参数
+```
 
 ## 如何贡献
 
