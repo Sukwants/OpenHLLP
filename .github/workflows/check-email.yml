@@ -24,18 +24,19 @@ jobs:
 
           echo "Checking commits in range: $BASE_SHA..$HEAD_SHA"
 
-          # format: commit|author_email|committer_email
+          # format: commit|author_name|author_email|committer_name|committer_email
           BAD_LINES=$(
-            git log --format='%H|%ae|%ce' "$BASE_SHA..$HEAD_SHA" | \
+            git log --format='%H|%an|%ae|%cn|%ce' "$BASE_SHA..$HEAD_SHA" | \
             awk -F'|' '
-              $2 !~ /@tongji\.edu\.cn$/ || $3 !~ /@tongji\.edu\.cn$/ {
+              ($3 !~ /@tongji\.edu\.cn$/) ||
+              !($5 ~ /@tongji\.edu\.cn$/ || ($4 == "GitHub" && $5 == "noreply@github.com")) {
                 print
               }
             '
           )
 
           if [ -n "$BAD_LINES" ]; then
-            echo "Found commits with invalid email domain (must end with @tongji.edu.cn):"
+            echo "Found commits with invalid identity: author email must end with @tongji.edu.cn; committer must be @tongji.edu.cn or exactly GitHub <noreply@github.com>."
             echo "$BAD_LINES"
             exit 1
           fi
