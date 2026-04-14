@@ -109,9 +109,9 @@ jobs:
               fi
             fi
 
-            declare -A SELECTED_STEMS
-            declare -A STEM_RUN_VALIDATOR
-            declare -A STEM_RUN_STD
+            declare -A SELECTED_STEMS=()
+            declare -A STEM_RUN_VALIDATOR=()
+            declare -A STEM_RUN_STD=()
 
             if [ -n "${DIR_RUN_ALL_INS[$dir]+x}" ]; then
               while IFS= read -r infile; do
