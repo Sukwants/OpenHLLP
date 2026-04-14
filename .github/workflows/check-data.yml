@@ -16,13 +16,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install g++
-        run: sudo apt-get update && sudo apt-get install -y g++
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install -y g++ python3-yaml
 
       - name: Run checks
         run: |
           set -e
           EXEC_TIMEOUT="2s"
+
+          load_diff_args() {
+            local config_file="$1"
+            python3 .github/scripts/read_config.py "$config_file"
+          }
 
           BASE_REF="${{ github.base_ref }}"
           git fetch --no-tags --prune --depth=1 origin "$BASE_REF"
@@ -50,6 +55,9 @@ jobs:
                     DIR_RUN_ALL_INS[$dir]=1
                     ;;
                   "$dir/std.cpp")
+                    DIR_RUN_ALL_ANS[$dir]=1
+                    ;;
+                  "$dir/_config.yaml")
                     DIR_RUN_ALL_ANS[$dir]=1
                     ;;
                   *.in)
@@ -88,6 +96,14 @@ jobs:
               else
                 echo "Missing std.cpp in $dir"
                 exit 1
+              fi
+
+              DIFF_ARGS=(-q)
+              if [ -f "$dir/_config.yaml" ]; then
+                mapfile -t CONFIG_DIFF_ARGS < <(load_diff_args "$dir/_config.yaml")
+                if [ ${#CONFIG_DIFF_ARGS[@]} -gt 0 ]; then
+                  DIFF_ARGS=(-q "${CONFIG_DIFF_ARGS[@]}")
+                fi
               fi
 
               declare -A SELECTED_STEMS
@@ -171,7 +187,7 @@ jobs:
                   if [ -f "$dir/checker.cpp" ]; then
                     timeout "$EXEC_TIMEOUT" ./checker "$infile" out.txt "$ansfile"
                   else
-                    diff -q out.txt "$ansfile"
+                    diff "${DIFF_ARGS[@]}" out.txt "$ansfile"
                   fi
                 fi
               done
