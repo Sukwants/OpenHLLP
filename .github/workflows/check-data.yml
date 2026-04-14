@@ -54,6 +54,9 @@ jobs:
                   "$dir/validator.cpp")
                     DIR_RUN_ALL_INS[$dir]=1
                     ;;
+                  "$dir/checker.cpp")
+                    DIR_RUN_ALL_ANS[$dir]=1
+                    ;;
                   "$dir/std.cpp")
                     DIR_RUN_ALL_ANS[$dir]=1
                     ;;
