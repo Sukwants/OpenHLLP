@@ -187,7 +187,7 @@ jobs:
                   if [ -f "$dir/checker.cpp" ]; then
                     timeout "$EXEC_TIMEOUT" ./checker "$infile" out.txt "$ansfile"
                   else
-                    diff "${DIFF_ARGS[@]}" out.txt "$ansfile"
+                    diff "${DIFF_ARGS[@]}" -- out.txt "$ansfile"
                   fi
                 fi
               done

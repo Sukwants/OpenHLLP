@@ -12,7 +12,7 @@ def main() -> int:
     try:
         with open(path, encoding="utf-8") as file:
             config = yaml.safe_load(file) or {}
-    except FileNotFoundError:
+    except (OSError, yaml.YAMLError):
         return 0
 
     if not isinstance(config, dict):
@@ -30,7 +30,7 @@ def main() -> int:
         return 0
 
     for arg in params:
-        if isinstance(arg, str) and arg:
+        if isinstance(arg, str) and arg.strip():
             print(arg)
 
     return 0
